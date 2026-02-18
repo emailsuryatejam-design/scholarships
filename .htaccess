@@ -2,6 +2,10 @@
     RewriteEngine On
     RewriteRule ^config/ - [F,L]
     RewriteRule ^includes/ - [F,L]
+
+    # Pass Authorization header to PHP (required for Bearer token auth)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </IfModule>
 
 <IfModule mod_headers.c>
