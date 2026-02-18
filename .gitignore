@@ -1,0 +1,8 @@
+deploy2.php
+api/_deploy.php
+.DS_Store
+
+# Sensitive config (use .example files as templates)
+config/database.php
+config/app.php
+config/google.php
