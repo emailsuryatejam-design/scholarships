@@ -12,6 +12,7 @@ require_once __DIR__ . '/../includes/auth.php';
 $allowed_origins = [
     'http://localhost:5173',
     'http://localhost:3000',
+    'https://plum-armadillo-323374.hostingersite.com',
     APP_URL,
 ];
 
