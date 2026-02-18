@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                s.host_institution, s.gender_requirement, s.financial_need_required, s.merit_based,
                s.view_count, s.is_verified, s.direction,
                sp.name AS provider_name, sp.type AS provider_type, sp.logo_url AS provider_logo,
-               c.name AS host_country_name, c.iso2_code AS host_country_code,
+               c.name AS host_country_name, c.iso_code AS host_country_code,
                ss.notes AS user_notes, ss.created_at AS saved_at
         FROM saved_scholarships ss
         INNER JOIN scholarships s ON s.id = ss.scholarship_id

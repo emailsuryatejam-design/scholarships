@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $profile = $stmt->fetch();
 
     // Get countries list for dropdowns
-    $countries = $pdo->query('SELECT id, name, iso2_code FROM countries ORDER BY name')->fetchAll();
+    $countries = $pdo->query('SELECT id, name, iso_code FROM countries ORDER BY name')->fetchAll();
 
     // Get fields of study for dropdowns
     $fields = $pdo->query('SELECT id, name FROM fields_of_study ORDER BY name')->fetchAll();
@@ -52,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'residence_country_id' => 'int',
         'date_of_birth'        => 'date',
         'gender'               => 'enum:male,female,other,prefer_not_to_say',
-        'current_education_level' => 'enum:secondary,undergraduate,masters,phd,postdoctoral,vocational,completed',
-        'desired_education_level' => 'enum:secondary,undergraduate,masters,phd,postdoctoral,vocational',
+        'current_education_level' => 'enum:secondary,undergraduate,postgraduate_masters,postgraduate_phd,postdoctoral,vocational,completed',
+        'desired_education_level' => 'enum:secondary,undergraduate,postgraduate_masters,postgraduate_phd,postdoctoral,vocational',
         'gpa'                  => 'decimal',
         'gpa_scale'            => 'decimal',
         'primary_field_id'     => 'int',

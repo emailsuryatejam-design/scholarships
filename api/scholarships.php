@@ -18,7 +18,7 @@ if (!empty($_GET['id'])) {
     $stmt = $pdo->prepare('
         SELECT s.*,
                sp.name AS provider_name, sp.type AS provider_type, sp.website_url AS provider_url, sp.logo_url AS provider_logo,
-               c.name AS host_country_name, c.iso2_code AS host_country_code
+               c.name AS host_country_name, c.iso_code AS host_country_code
         FROM scholarships s
         LEFT JOIN scholarship_providers sp ON sp.id = s.provider_id
         LEFT JOIN countries c ON c.id = s.host_country_id
@@ -34,7 +34,7 @@ if (!empty($_GET['id'])) {
 
     // Get eligible nationalities
     $stmt = $pdo->prepare('
-        SELECT c.name, c.iso2_code
+        SELECT c.name, c.iso_code
         FROM scholarship_eligible_nationalities sen
         INNER JOIN countries c ON c.id = sen.country_id
         WHERE sen.scholarship_id = :sid
@@ -98,7 +98,7 @@ if ($search !== '') {
 
 // Academic level filter
 $level = trim($_GET['level'] ?? '');
-if ($level !== '' && in_array($level, ['secondary', 'undergraduate', 'masters', 'phd', 'postdoctoral', 'vocational'])) {
+if ($level !== '' && in_array($level, ['secondary', 'undergraduate', 'postgraduate_masters', 'postgraduate_phd', 'postdoctoral', 'vocational'])) {
     $where[]  = 'FIND_IN_SET(:level, s.academic_level) > 0';
     $params[':level'] = $level;
 }
@@ -184,7 +184,7 @@ $sql = "
            s.gender_requirement, s.financial_need_required, s.merit_based,
            s.host_institution, s.view_count, s.is_verified,
            sp.name AS provider_name, sp.type AS provider_type, sp.logo_url AS provider_logo,
-           c.name AS host_country_name, c.iso2_code AS host_country_code
+           c.name AS host_country_name, c.iso_code AS host_country_code
     FROM scholarships s
     LEFT JOIN scholarship_providers sp ON sp.id = s.provider_id
     LEFT JOIN countries c ON c.id = s.host_country_id
@@ -316,7 +316,7 @@ function format_scholarship(array $s): array {
 function get_available_filters(PDO $pdo): array {
     // Get host countries that have active scholarships
     $stmt = $pdo->query('
-        SELECT DISTINCT c.id, c.name, c.iso2_code
+        SELECT DISTINCT c.id, c.name, c.iso_code
         FROM countries c
         INNER JOIN scholarships s ON s.host_country_id = c.id AND s.is_active = 1
         ORDER BY c.name
@@ -346,7 +346,7 @@ function get_available_filters(PDO $pdo): array {
 
     // Get nationalities that are eligible for scholarships
     $stmt = $pdo->query('
-        SELECT DISTINCT c.id, c.name, c.iso2_code
+        SELECT DISTINCT c.id, c.name, c.iso_code
         FROM countries c
         INNER JOIN scholarship_eligible_nationalities sen ON sen.country_id = c.id
         INNER JOIN scholarships s ON s.id = sen.scholarship_id AND s.is_active = 1
