@@ -1,11 +1,24 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Block direct access to config and includes
     RewriteRule ^config/ - [F,L]
     RewriteRule ^includes/ - [F,L]
 
     # Pass Authorization header to PHP (required for Bearer token auth)
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Serve API endpoints as-is (PHP files under /api/)
+    RewriteRule ^api/ - [L]
+
+    # Serve existing files/directories as-is (CSS, JS, images, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # SPA fallback: route all other requests to index.html
+    RewriteRule ^ index.html [L]
 </IfModule>
 
 <IfModule mod_headers.c>

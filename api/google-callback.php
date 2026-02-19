@@ -33,7 +33,7 @@ function create_google_session(int $user_id): string {
     return $token;
 }
 
-$frontend_url = 'https://plum-armadillo-323374.hostingersite.com';
+$frontend_url = APP_URL;  // Same domain — frontend is served from the backend domain now
 
 // Helper: HTML redirect (avoids LiteSpeed header issues)
 function html_redirect(string $url): void {
