@@ -205,17 +205,28 @@ $rows = $stmt->fetchAll();
 // Format scholarships
 $scholarships = array_map('format_scholarship', $rows);
 
-// Check saved status if user is authenticated
+// Check saved status and application status if user is authenticated
 $user = get_bearer_user();
 if ($user && !empty($scholarships)) {
     $ids = array_column($scholarships, 'id');
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    // Saved scholarships
     $stmt = $pdo->prepare("SELECT scholarship_id FROM saved_scholarships WHERE user_id = ? AND scholarship_id IN ($placeholders)");
     $stmt->execute(array_merge([$user['id']], $ids));
     $saved_ids = array_column($stmt->fetchAll(), 'scholarship_id');
 
+    // Application status
+    $stmt = $pdo->prepare("SELECT scholarship_id, status FROM applications WHERE user_id = ? AND scholarship_id IN ($placeholders)");
+    $stmt->execute(array_merge([$user['id']], $ids));
+    $app_statuses = [];
+    while ($row = $stmt->fetch()) {
+        $app_statuses[(int)$row['scholarship_id']] = $row['status'];
+    }
+
     foreach ($scholarships as &$s) {
         $s['is_saved'] = in_array($s['id'], $saved_ids);
+        $s['application_status'] = $app_statuses[$s['id']] ?? null;
     }
     unset($s);
 }
@@ -305,7 +316,8 @@ function format_scholarship(array $s): array {
         'is_verified'       => (bool)($s['is_verified'] ?? false),
         'views'             => (int)($s['view_count'] ?? 0),
         'direction'         => $s['direction'] ?? 'any',
-        'is_saved'          => $s['is_saved'] ?? false,
+        'is_saved'            => $s['is_saved'] ?? false,
+        'application_status'  => $s['application_status'] ?? null,
         // Related data (only present in detail view)
         'eligible_nationalities' => $s['eligible_nationalities'] ?? [],
         'eligible_fields'        => $s['eligible_fields'] ?? [],

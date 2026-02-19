@@ -28,6 +28,19 @@ $stmt = $pdo->prepare('SELECT COUNT(*) FROM applications WHERE user_id = :uid');
 $stmt->execute([':uid' => $uid]);
 $applications = (int)$stmt->fetchColumn();
 
+// Application pipeline (counts by status)
+$stmt = $pdo->prepare('SELECT status, COUNT(*) as count FROM applications WHERE user_id = :uid GROUP BY status');
+$stmt->execute([':uid' => $uid]);
+$application_pipeline = [];
+while ($row = $stmt->fetch()) {
+    $application_pipeline[$row['status']] = (int)$row['count'];
+}
+
+// Unread notifications count
+$stmt = $pdo->prepare('SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND is_read = 0');
+$stmt->execute([':uid' => $uid]);
+$unread_notifications = (int)$stmt->fetchColumn();
+
 // Total active scholarships in the platform
 $stmt = $pdo->query('SELECT COUNT(*) FROM scholarships WHERE is_active = 1');
 $total_scholarships = (int)$stmt->fetchColumn();
@@ -49,12 +62,29 @@ $stmt = $pdo->prepare('
 $stmt->execute([':uid' => $uid]);
 $recent_matches = $stmt->fetchAll();
 
+// Recent application activity (last 5 timeline events)
+$stmt = $pdo->prepare('
+    SELECT at.to_status, at.note, at.created_at,
+           s.title AS scholarship_title, a.id AS application_id
+    FROM application_timeline at
+    INNER JOIN applications a ON a.id = at.application_id
+    INNER JOIN scholarships s ON s.id = a.scholarship_id
+    WHERE a.user_id = :uid
+    ORDER BY at.created_at DESC
+    LIMIT 5
+');
+$stmt->execute([':uid' => $uid]);
+$recent_activity = $stmt->fetchAll();
+
 json_response([
     'stats' => [
-        'matches'            => $matches,
-        'saved'              => $saved,
-        'applications'       => $applications,
-        'total_scholarships' => $total_scholarships,
+        'matches'              => $matches,
+        'saved'                => $saved,
+        'applications'         => $applications,
+        'total_scholarships'   => $total_scholarships,
+        'unread_notifications' => $unread_notifications,
     ],
-    'recent_matches' => $recent_matches,
+    'application_pipeline' => $application_pipeline,
+    'recent_matches'       => $recent_matches,
+    'recent_activity'      => $recent_activity,
 ]);
