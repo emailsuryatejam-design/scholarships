@@ -1,7 +1,7 @@
 <?php
 /**
  * Google OAuth initialization for SPA
- * Sets CSRF cookie then redirects to Google via HTML meta refresh
+ * Generates HMAC-signed state for CSRF, redirects to Google via HTML meta refresh
  */
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../config/google.php';
