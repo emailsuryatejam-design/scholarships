@@ -11,7 +11,7 @@ require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/http.php';
 require_once __DIR__ . '/../includes/auth.php';
 
-$frontend_url = 'http://localhost:5173';
+$frontend_url = 'https://plum-armadillo-323374.hostingersite.com';
 
 // Check for errors from Google
 if (!empty($_GET['error'])) {
