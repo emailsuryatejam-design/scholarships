@@ -4,35 +4,63 @@
  * Exchanges code for token, creates/finds user, creates session
  * Redirects to React app with Bearer token in URL
  */
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../config/google.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/http.php';
-require_once __DIR__ . '/../includes/auth.php';
+
+// Inline session creator (can't use _bootstrap.php — it sends JSON headers)
+function create_google_session(int $user_id): string {
+    $pdo = get_db_connection();
+    $token = bin2hex(random_bytes(64));
+    $expires_at = date('Y-m-d H:i:s', time() + SESSION_LIFETIME_SECONDS);
+    $stmt = $pdo->prepare('
+        INSERT INTO sessions (user_id, token, ip_address, user_agent, expires_at, created_at)
+        VALUES (:user_id, :token, :ip, :ua, :expires, NOW())
+    ');
+    $stmt->execute([
+        ':user_id' => $user_id,
+        ':token'   => hash('sha256', $token),
+        ':ip'      => $_SERVER['REMOTE_ADDR'] ?? '',
+        ':ua'      => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
+        ':expires' => $expires_at,
+    ]);
+    return $token;
+}
 
 $frontend_url = 'https://plum-armadillo-323374.hostingersite.com';
+
+// Helper: HTML redirect (avoids LiteSpeed header issues)
+function html_redirect(string $url): void {
+    $escaped = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Content-Type: text/html; charset=UTF-8');
+    echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0;url={$escaped}\"></head>";
+    echo "<body><p>Redirecting... <a href=\"{$escaped}\">Click here</a></p></body></html>";
+    exit;
+}
 
 // Check for errors from Google
 if (!empty($_GET['error'])) {
     $error = urlencode('Google sign-in was cancelled or denied.');
-    header("Location: {$frontend_url}/auth/google/callback?error={$error}");
-    exit;
+    html_redirect("{$frontend_url}/auth/google/callback?error={$error}");
 }
 
 // Validate state (CSRF check)
 $state = $_GET['state'] ?? '';
 if (!validate_oauth_state($state)) {
     $error = urlencode('Security validation failed. Please try again.');
-    header("Location: {$frontend_url}/auth/google/callback?error={$error}");
-    exit;
+    html_redirect("{$frontend_url}/auth/google/callback?error={$error}");
 }
 
 $code = $_GET['code'] ?? '';
 if (empty($code)) {
     $error = urlencode('No authorization code received from Google.');
-    header("Location: {$frontend_url}/auth/google/callback?error={$error}");
-    exit;
+    html_redirect("{$frontend_url}/auth/google/callback?error={$error}");
 }
 
 try {
@@ -95,8 +123,7 @@ try {
                 $user = $existing;
             } else {
                 $error = urlencode('An account with this email already exists. Please sign in with your password.');
-                header("Location: {$frontend_url}/auth/google/callback?error={$error}");
-                exit;
+                html_redirect("{$frontend_url}/auth/google/callback?error={$error}");
             }
         } else {
             // New user
@@ -122,19 +149,16 @@ try {
     // Check active
     if (isset($user['is_active']) && !$user['is_active']) {
         $error = urlencode('Your account has been deactivated. Contact support.');
-        header("Location: {$frontend_url}/auth/google/callback?error={$error}");
-        exit;
+        html_redirect("{$frontend_url}/auth/google/callback?error={$error}");
     }
 
     // Create session and get raw token
-    $session_token = create_api_session((int)$user['id']);
+    $session_token = create_google_session((int)$user['id']);
 
     // Redirect to React app with token
-    header("Location: {$frontend_url}/auth/google/callback?token=" . urlencode($session_token));
-    exit;
+    html_redirect("{$frontend_url}/auth/google/callback?token=" . urlencode($session_token));
 
 } catch (Exception $e) {
     $error = urlencode('Google sign-in failed: ' . $e->getMessage());
-    header("Location: {$frontend_url}/auth/google/callback?error={$error}");
-    exit;
+    html_redirect("{$frontend_url}/auth/google/callback?error={$error}");
 }
